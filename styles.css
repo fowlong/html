@@ -198,7 +198,7 @@ body {
   position: relative;
   box-shadow: 0 32px 64px rgba(15, 20, 40, 0.25);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   background: white;
   transform-origin: top left;
 }
@@ -209,6 +209,16 @@ body {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   z-index: 0;
+  border-radius: inherit;
+  transition: opacity var(--transition);
+}
+
+#canvas.background-hidden .page-background {
+  opacity: 0;
+}
+
+#canvas.background-hidden .page {
+  box-shadow: none;
 }
 
 .editable-block,

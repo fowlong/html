@@ -13,6 +13,7 @@ if (pdfjsLib?.GlobalWorkerOptions) {
 const pdfInput = document.getElementById('pdfInput');
 const canvas = document.getElementById('canvas');
 const clearButton = document.getElementById('clearCanvas');
+const toggleBackgroundButton = document.getElementById('toggleBackground');
 const exportButton = document.getElementById('exportHtml');
 const exportPdfButton = document.getElementById('exportPdf');
 const inspector = {
@@ -34,6 +35,18 @@ const inspector = {
 
 let currentPdf = null;
 let selectedElement = null;
+let backgroundVisible = true;
+
+function updateBackgroundToggle() {
+  if (!canvas) return;
+  canvas.classList.toggle('background-hidden', !backgroundVisible);
+  if (toggleBackgroundButton) {
+    toggleBackgroundButton.textContent = backgroundVisible ? 'Hide background' : 'Show background';
+    toggleBackgroundButton.setAttribute('aria-pressed', String(backgroundVisible));
+  }
+}
+
+updateBackgroundToggle();
 
 function createElementId() {
   if (window.crypto?.randomUUID) {
@@ -76,6 +89,11 @@ clearButton?.addEventListener('click', () => {
       <p>The PDF will be rendered page-by-page with every element converted into an editable block.</p>
     </div>
   `;
+});
+
+toggleBackgroundButton?.addEventListener('click', () => {
+  backgroundVisible = !backgroundVisible;
+  updateBackgroundToggle();
 });
 
 exportButton?.addEventListener('click', () => {
@@ -366,8 +384,8 @@ async function renderPdf(pdf) {
 
     const pixelRatio = window.devicePixelRatio || 1;
     const canvasElement = document.createElement('canvas');
-    canvasElement.width = Math.floor(viewport.width * pixelRatio);
-    canvasElement.height = Math.floor(viewport.height * pixelRatio);
+    canvasElement.width = Math.ceil(viewport.width * pixelRatio);
+    canvasElement.height = Math.ceil(viewport.height * pixelRatio);
     const ctx = canvasElement.getContext('2d');
     const renderViewport = page.getViewport({ scale: CSS_UNITS * pixelRatio });
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -380,6 +398,8 @@ async function renderPdf(pdf) {
     pageWrapper.appendChild(pageElement);
     canvas.appendChild(pageWrapper);
   }
+
+  updateBackgroundToggle();
 }
 
 async function renderSvgVectorLayer(page, viewport, pageElement) {
@@ -574,53 +594,61 @@ async function renderTextLayer(page, viewport, pageElement, pageIndex) {
 
     const computedStyle = window.getComputedStyle(sourceDiv);
     const matrixValues = parseMatrixTransform(computedStyle.transform || sourceDiv.style.transform);
-
-    const element = document.createElement('div');
-    element.className = 'editable-block';
-    element.setAttribute('contenteditable', 'true');
-    element.dataset.elementId = createElementId();
-    element.dataset.pageIndex = String(pageIndex);
-    element.dataset.translateX = '0';
-    element.dataset.translateY = '0';
-    element.dataset.rotation = '0';
-    element.dataset.scaleX = '1';
-    element.dataset.scaleY = '1';
-    element.dataset.baseXAxis = `${matrixValues[0]},${matrixValues[1]}`;
-    element.dataset.baseYAxis = `${matrixValues[2]},${matrixValues[3]}`;
-    element.dataset.baseTranslate = `${matrixValues[4]},${matrixValues[5]}`;
-
+    const rect = sourceDiv.getBoundingClientRect();
     const font = styles[item.fontName] || {};
     const fontSize = computedStyle.fontSize || `${Math.hypot(matrixValues[2], matrixValues[3])}px`;
     const fontHeight = parseFloat(fontSize) || Math.hypot(matrixValues[2], matrixValues[3]);
-    const rect = sourceDiv.getBoundingClientRect();
-    const width = rect.width || item.width * viewport.scale;
-    const height = rect.height || fontHeight;
+    const width = rect.width || parseFloat(computedStyle.width) || item.width * viewport.scale;
+    const height = rect.height || parseFloat(computedStyle.height) || fontHeight;
     const lineHeightValue = computedStyle.lineHeight === 'normal' ? fontSize : computedStyle.lineHeight;
+    const fontFamily = font.fontFamily || computedStyle.fontFamily || '';
+    const fontWeight = font.fontWeight || computedStyle.fontWeight || '400';
+    const fontStyle = font.fontStyle || computedStyle.fontStyle || 'normal';
 
-    element.dataset.originalFontFamily = font.fontFamily || computedStyle.fontFamily || '';
-    element.dataset.originalFontWeight = font.fontWeight || computedStyle.fontWeight || '400';
-    element.dataset.originalFontStyle = font.fontStyle || computedStyle.fontStyle || 'normal';
+    sourceDiv.classList.add('editable-block');
+    sourceDiv.setAttribute('contenteditable', 'true');
+    sourceDiv.dataset.elementId = createElementId();
+    sourceDiv.dataset.pageIndex = String(pageIndex);
+    sourceDiv.dataset.translateX = '0';
+    sourceDiv.dataset.translateY = '0';
+    sourceDiv.dataset.rotation = '0';
+    sourceDiv.dataset.scaleX = '1';
+    sourceDiv.dataset.scaleY = '1';
+    sourceDiv.dataset.baseXAxis = `${matrixValues[0]},${matrixValues[1]}`;
+    sourceDiv.dataset.baseYAxis = `${matrixValues[2]},${matrixValues[3]}`;
+    sourceDiv.dataset.baseTranslate = `${matrixValues[4]},${matrixValues[5]}`;
+    sourceDiv.dataset.originalFontFamily = fontFamily;
+    sourceDiv.dataset.originalFontWeight = fontWeight;
+    sourceDiv.dataset.originalFontStyle = fontStyle;
 
-    element.style.transformOrigin = '0 0';
-    element.style.width = `${width}px`;
-    element.style.height = `${height}px`;
-    element.style.fontSize = fontSize;
-    element.style.lineHeight = lineHeightValue || fontSize;
-    element.style.fontFamily = element.dataset.originalFontFamily;
-    element.style.fontWeight = element.dataset.originalFontWeight;
-    element.style.fontStyle = element.dataset.originalFontStyle;
-    element.style.color = item.rgb
+    sourceDiv.style.position = 'absolute';
+    sourceDiv.style.left = '0px';
+    sourceDiv.style.top = '0px';
+    sourceDiv.style.transformOrigin = '0 0';
+    sourceDiv.style.pointerEvents = 'auto';
+    sourceDiv.style.userSelect = 'text';
+    sourceDiv.style.whiteSpace = 'pre';
+    sourceDiv.style.width = `${width}px`;
+    sourceDiv.style.height = `${height}px`;
+    sourceDiv.style.fontSize = fontSize;
+    sourceDiv.style.lineHeight = lineHeightValue || fontSize;
+    sourceDiv.style.fontFamily = fontFamily;
+    sourceDiv.style.fontWeight = fontWeight;
+    sourceDiv.style.fontStyle = fontStyle;
+    sourceDiv.style.color = item.rgb
       ? `rgb(${Math.round(item.rgb[0] * 255)}, ${Math.round(item.rgb[1] * 255)}, ${Math.round(item.rgb[2] * 255)})`
       : computedStyle.color || '#000000';
 
-    element.textContent = item.str;
+    sourceDiv.textContent = item.str;
+    sourceDiv.removeAttribute('aria-hidden');
+    sourceDiv.removeAttribute('role');
 
     const zIndex = pageElement.children.length + 1;
-    element.dataset.zIndex = String(zIndex);
-    element.style.zIndex = element.dataset.zIndex;
+    sourceDiv.dataset.zIndex = String(zIndex);
+    sourceDiv.style.zIndex = sourceDiv.dataset.zIndex;
 
-    pageElement.appendChild(element);
-    initialiseEditableElement(element);
+    pageElement.appendChild(sourceDiv);
+    initialiseEditableElement(sourceDiv);
   });
 
   textLayerHost.remove();
