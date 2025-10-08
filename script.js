@@ -7,13 +7,14 @@ if (!pdfjsLib) {
 
 if (pdfjsLib?.GlobalWorkerOptions) {
   pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js';
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
 const pdfInput = document.getElementById('pdfInput');
 const canvas = document.getElementById('canvas');
 const clearButton = document.getElementById('clearCanvas');
 const exportButton = document.getElementById('exportHtml');
+const exportPdfButton = document.getElementById('exportPdf');
 const inspector = {
   fontFamily: document.getElementById('fontFamily'),
   fontSize: document.getElementById('fontSize'),
@@ -93,6 +94,69 @@ exportButton?.addEventListener('click', () => {
   link.download = 'editable-pdf.html';
   link.click();
   URL.revokeObjectURL(url);
+});
+
+exportPdfButton?.addEventListener('click', async () => {
+  if (!canvas.querySelector('.page')) {
+    alert('Import a PDF before exporting.');
+    return;
+  }
+
+  if (!window.html2canvas) {
+    alert('Unable to export to PDF because html2canvas failed to load.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) {
+    alert('Unable to export to PDF because jsPDF failed to load.');
+    return;
+  }
+
+  deselectElement();
+
+  const pages = Array.from(canvas.querySelectorAll('.page'));
+  const pxToPt = value => (value * 72) / 96;
+
+  try {
+    let pdfDocument = null;
+
+    for (let index = 0; index < pages.length; index += 1) {
+      const pageElement = pages[index];
+      const widthPx = pageElement.offsetWidth;
+      const heightPx = pageElement.offsetHeight;
+      const orientation = widthPx > heightPx ? 'landscape' : 'portrait';
+
+      const snapshot = await window.html2canvas(pageElement, {
+        scale: Math.max(window.devicePixelRatio || 1, 2),
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+
+      const imageData = snapshot.toDataURL('image/png');
+      const widthPt = pxToPt(widthPx);
+      const heightPt = pxToPt(heightPx);
+
+      if (!pdfDocument) {
+        pdfDocument = new jsPDF({
+          orientation,
+          unit: 'pt',
+          format: [widthPt, heightPt],
+        });
+      } else {
+        pdfDocument.addPage([widthPt, heightPt], orientation);
+      }
+
+      pdfDocument.addImage(imageData, 'PNG', 0, 0, widthPt, heightPt);
+    }
+
+    if (pdfDocument) {
+      pdfDocument.save('editable.pdf');
+    }
+  } catch (error) {
+    console.error('Failed to export PDF', error);
+    alert('Something went wrong while exporting the PDF.');
+  }
 });
 
 canvas.addEventListener('click', event => {
