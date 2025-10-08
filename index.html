@@ -5,8 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Seamless PDF HTML Editor</title>
     <link rel="stylesheet" href="styles.css" />
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js" referrerpolicy="no-referrer"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js" referrerpolicy="no-referrer"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" referrerpolicy="no-referrer"></script>
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      defer
+      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+      referrerpolicy="no-referrer"
+    ></script>
     <script defer src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <script defer src="script.js"></script>
   </head>
@@ -23,6 +32,9 @@
         </button>
         <button id="exportHtml" type="button" title="Export the current editable layout to a standalone HTML file">
           Export HTML
+        </button>
+        <button id="exportPdf" type="button" title="Export the current editable layout to a PDF file">
+          Export PDF
         </button>
       </div>
     </header>
