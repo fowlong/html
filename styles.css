@@ -1,0 +1,316 @@
+:root {
+  --surface: #f5f5f8;
+  --surface-strong: #ffffff;
+  --border: #d4d4de;
+  --accent: #4566ff;
+  --accent-strong: #2532ba;
+  --text: #1d1d24;
+  --muted: #5a5a72;
+  --shadow: 0 12px 28px rgba(24, 32, 56, 0.18);
+  --radius: 18px;
+  --transition: 180ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  font-size: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background: var(--surface);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--surface-strong);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+
+.logo {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.import-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.file-input {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  background: var(--accent);
+  color: white;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.file-input:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(69, 102, 255, 0.35);
+}
+
+.file-input input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.import-controls button {
+  border: none;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.import-controls button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(24, 32, 56, 0.15);
+}
+
+.app-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.inspector {
+  width: 320px;
+  background: var(--surface-strong);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.inspector h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.inspector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inspector label,
+.inspector button,
+.inspector input,
+.inspector select {
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.inspector input,
+.inspector select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: white;
+  color: inherit;
+}
+
+.inspector .button-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.inspector .button-group button {
+  padding: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: white;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.inspector .button-group button:hover,
+.inspector .button-group button.active {
+  background: var(--accent);
+  color: white;
+}
+
+.transform-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.transform-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.canvas {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  padding: 2rem;
+}
+
+.canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(17, 25, 40, 0.08), rgba(17, 25, 40, 0));
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.page-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.page {
+  position: relative;
+  box-shadow: 0 32px 64px rgba(15, 20, 40, 0.25);
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  transform-origin: top left;
+}
+
+.page-background {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  z-index: 0;
+}
+
+.editable-block,
+.vector-block {
+  position: absolute;
+  white-space: pre;
+  transform-origin: 0 0;
+  display: inline-block;
+  color: inherit;
+  cursor: move;
+  z-index: 1;
+}
+
+.editable-block:focus,
+.vector-block:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.editable-block:focus {
+  cursor: text;
+}
+
+.editable-block[data-selected="true"],
+.vector-block[data-selected="true"] {
+  box-shadow: 0 0 0 2px rgba(69, 102, 255, 0.75);
+}
+
+.vector-block {
+  white-space: normal;
+}
+
+.vector-block:focus {
+  cursor: move;
+}
+
+.vector-block svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(15, 20, 40, 0.35);
+}
+
+.placeholder {
+  margin: auto;
+  text-align: center;
+  max-width: 460px;
+  color: var(--muted);
+}
+
+.placeholder h2 {
+  font-weight: 600;
+}
+
+.app-footer {
+  text-align: center;
+  padding: 1rem 1.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+
+@media (max-width: 1024px) {
+  .app-main {
+    flex-direction: column;
+  }
+
+  .inspector {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .inspector-section {
+    flex: 1 1 200px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #10121a;
+    --surface-strong: #161922;
+    --border: #25293a;
+    --accent: #6a83ff;
+    --accent-strong: #94a3ff;
+    --text: #f5f6ff;
+    --muted: #aab1d8;
+    --shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .editable-block {
+    color: inherit;
+  }
+}
