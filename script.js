@@ -476,59 +476,154 @@ function convertSvgToVectorBlocks(svg, pageElement) {
   svg.remove();
 }
 
+function parseMatrixTransform(transformString) {
+  const match = /matrix\(([^)]+)\)/.exec(transformString || '');
+  if (!match) {
+    return [1, 0, 0, 1, 0, 0];
+  }
+  return match[1]
+    .split(',')
+    .map(value => {
+      const parsed = parseFloat(value.trim());
+      return Number.isFinite(parsed) ? parsed : 0;
+    });
+}
+
 async function renderTextLayer(page, viewport, pageElement, pageIndex) {
-  const textContent = await page.getTextContent({ includeMarkedContent: true, disableCombineTextItems: false });
+  const textContent = await page.getTextContent({
+    includeMarkedContent: true,
+    disableCombineTextItems: false,
+  });
+
+  if (!pdfjsLib?.renderTextLayer) {
+    console.warn('PDF.js text layer renderer is unavailable; using basic fallback.');
+    const styles = textContent.styles || {};
+
+    textContent.items.forEach(item => {
+      const transform = pdfjsLib.Util.transform(viewport.transform, item.transform);
+      const element = document.createElement('div');
+      element.className = 'editable-block';
+      element.setAttribute('contenteditable', 'true');
+      element.dataset.elementId = createElementId();
+      element.dataset.pageIndex = String(pageIndex);
+      element.dataset.translateX = '0';
+      element.dataset.translateY = '0';
+      element.dataset.rotation = '0';
+      element.dataset.scaleX = '1';
+      element.dataset.scaleY = '1';
+      element.dataset.baseXAxis = `${transform[0]},${transform[1]}`;
+      element.dataset.baseYAxis = `${transform[2]},${transform[3]}`;
+      element.dataset.baseTranslate = `${transform[4]},${transform[5]}`;
+
+      const font = styles[item.fontName] || {};
+      const fontHeight = Math.hypot(transform[2], transform[3]);
+      const width = item.width * viewport.scale;
+
+      element.dataset.originalFontFamily = font.fontFamily || 'inherit';
+      element.dataset.originalFontWeight = font.fontWeight || '400';
+      element.dataset.originalFontStyle = font.fontStyle || 'normal';
+
+      element.style.transformOrigin = '0 0';
+      element.style.width = `${width}px`;
+      element.style.height = `${fontHeight}px`;
+      element.style.fontSize = `${fontHeight}px`;
+      element.style.lineHeight = `${item.height ? item.height * viewport.scale : fontHeight}px`;
+      element.style.fontFamily = element.dataset.originalFontFamily;
+      element.style.fontWeight = element.dataset.originalFontWeight;
+      element.style.fontStyle = element.dataset.originalFontStyle;
+      element.style.color = item.rgb
+        ? `rgb(${Math.round(item.rgb[0] * 255)}, ${Math.round(item.rgb[1] * 255)}, ${Math.round(item.rgb[2] * 255)})`
+        : '#000000';
+
+      element.textContent = item.str;
+
+      const zIndex = pageElement.children.length + 1;
+      element.dataset.zIndex = String(zIndex);
+      element.style.zIndex = element.dataset.zIndex;
+
+      pageElement.appendChild(element);
+      initialiseEditableElement(element);
+    });
+    return;
+  }
+
+  const textLayerHost = document.createElement('div');
+  textLayerHost.className = 'pdfjs-text-layer';
+  textLayerHost.style.position = 'absolute';
+  textLayerHost.style.inset = '0';
+  textLayerHost.style.pointerEvents = 'none';
+  pageElement.appendChild(textLayerHost);
+
+  const textDivs = [];
+  const renderTask = pdfjsLib.renderTextLayer({
+    textContent,
+    container: textLayerHost,
+    viewport,
+    textDivs,
+  });
+
+  await renderTask.promise;
+
   const styles = textContent.styles || {};
 
   textContent.items.forEach((item, index) => {
-    const transform = pdfjsLib.Util.transform(viewport.transform, item.transform);
+    const sourceDiv = textDivs[index];
+    if (!sourceDiv) {
+      return;
+    }
+
+    const computedStyle = window.getComputedStyle(sourceDiv);
+    const matrixValues = parseMatrixTransform(computedStyle.transform || sourceDiv.style.transform);
+
     const element = document.createElement('div');
     element.className = 'editable-block';
     element.setAttribute('contenteditable', 'true');
     element.dataset.elementId = createElementId();
-    element.dataset.pageIndex = pageIndex;
+    element.dataset.pageIndex = String(pageIndex);
     element.dataset.translateX = '0';
     element.dataset.translateY = '0';
     element.dataset.rotation = '0';
     element.dataset.scaleX = '1';
     element.dataset.scaleY = '1';
-    element.dataset.baseTransform = transform.join(',');
-
-    const baseXAxis = [transform[0], transform[1]];
-    const baseYAxis = [transform[2], transform[3]];
-    const baseTranslate = [transform[4], transform[5]];
-
-    element.dataset.baseXAxis = baseXAxis.join(',');
-    element.dataset.baseYAxis = baseYAxis.join(',');
-    element.dataset.baseTranslate = baseTranslate.join(',');
+    element.dataset.baseXAxis = `${matrixValues[0]},${matrixValues[1]}`;
+    element.dataset.baseYAxis = `${matrixValues[2]},${matrixValues[3]}`;
+    element.dataset.baseTranslate = `${matrixValues[4]},${matrixValues[5]}`;
 
     const font = styles[item.fontName] || {};
-    element.dataset.originalFontFamily = font.fontFamily || '';
-    element.dataset.originalFontWeight = font.fontWeight || '400';
-    element.dataset.originalFontStyle = font.fontStyle || 'normal';
+    const fontSize = computedStyle.fontSize || `${Math.hypot(matrixValues[2], matrixValues[3])}px`;
+    const fontHeight = parseFloat(fontSize) || Math.hypot(matrixValues[2], matrixValues[3]);
+    const rect = sourceDiv.getBoundingClientRect();
+    const width = rect.width || item.width * viewport.scale;
+    const height = rect.height || fontHeight;
+    const lineHeightValue = computedStyle.lineHeight === 'normal' ? fontSize : computedStyle.lineHeight;
 
-    const fontHeight = Math.hypot(transform[2], transform[3]);
-    const width = item.width * viewport.scale;
+    element.dataset.originalFontFamily = font.fontFamily || computedStyle.fontFamily || '';
+    element.dataset.originalFontWeight = font.fontWeight || computedStyle.fontWeight || '400';
+    element.dataset.originalFontStyle = font.fontStyle || computedStyle.fontStyle || 'normal';
 
-    element.style.transform = `matrix(${transform.join(',')})`;
     element.style.transformOrigin = '0 0';
-    element.style.height = `${fontHeight}px`;
     element.style.width = `${width}px`;
-    element.style.fontSize = `${fontHeight}px`;
-    element.style.lineHeight = `${item.height ? item.height * viewport.scale : fontHeight}px`;
-    element.style.fontFamily = font.fontFamily || 'inherit';
-    element.style.fontWeight = font.fontWeight || '400';
-    element.style.fontStyle = font.fontStyle || 'normal';
-    element.style.color = item.rgb ? `rgb(${item.rgb[0] * 255}, ${item.rgb[1] * 255}, ${item.rgb[2] * 255})` : '#000000';
+    element.style.height = `${height}px`;
+    element.style.fontSize = fontSize;
+    element.style.lineHeight = lineHeightValue || fontSize;
+    element.style.fontFamily = element.dataset.originalFontFamily;
+    element.style.fontWeight = element.dataset.originalFontWeight;
+    element.style.fontStyle = element.dataset.originalFontStyle;
+    element.style.color = item.rgb
+      ? `rgb(${Math.round(item.rgb[0] * 255)}, ${Math.round(item.rgb[1] * 255)}, ${Math.round(item.rgb[2] * 255)})`
+      : computedStyle.color || '#000000';
 
     element.textContent = item.str;
 
-    initialiseEditableElement(element);
     const zIndex = pageElement.children.length + 1;
     element.dataset.zIndex = String(zIndex);
     element.style.zIndex = element.dataset.zIndex;
+
     pageElement.appendChild(element);
+    initialiseEditableElement(element);
   });
+
+  textLayerHost.remove();
 }
 
 function initialiseEditableElement(element) {
@@ -551,21 +646,29 @@ function initialiseEditableElement(element) {
 
   applyCompositeTransform(element);
 
-  interact(element).draggable({
-    listeners: {
-      move(event) {
-        const dx = event.dx;
-        const dy = event.dy;
-        const currentX = parseFloat(element.dataset.translateX || '0');
-        const currentY = parseFloat(element.dataset.translateY || '0');
-        element.dataset.translateX = currentX + dx;
-        element.dataset.translateY = currentY + dy;
-        applyCompositeTransform(element);
-      },
-    },
-  }).styleCursor(false);
+  if (!window.interact) {
+    return;
+  }
 
-  interact(element).resizable({
+  const interactable = window.interact(element);
+
+  interactable
+    .draggable({
+      listeners: {
+        move(event) {
+          const dx = event.dx;
+          const dy = event.dy;
+          const currentX = parseFloat(element.dataset.translateX || '0');
+          const currentY = parseFloat(element.dataset.translateY || '0');
+          element.dataset.translateX = currentX + dx;
+          element.dataset.translateY = currentY + dy;
+          applyCompositeTransform(element);
+        },
+      },
+    })
+    .styleCursor(false);
+
+  interactable.resizable({
     edges: { left: false, right: true, bottom: true, top: false },
     listeners: {
       move(event) {
@@ -583,7 +686,7 @@ function initialiseEditableElement(element) {
       },
     },
     modifiers: [
-      interact.modifiers.restrictEdges({
+      window.interact.modifiers.restrictEdges({
         outer: 'parent',
       }),
     ],
