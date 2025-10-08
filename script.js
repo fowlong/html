@@ -1,5 +1,9 @@
 const CSS_UNITS = 96.0 / 72.0;
-const pdfjsLib = window['pdfjs-dist/build/pdf'];
+const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+
+if (!pdfjsLib) {
+  console.error('PDF.js library failed to load.');
+}
 
 if (pdfjsLib?.GlobalWorkerOptions) {
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -38,6 +42,10 @@ function createElementId() {
 }
 
 pdfInput?.addEventListener('change', async event => {
+  if (!pdfjsLib) {
+    alert('PDF.js failed to load. Please check your network connection and reload the page.');
+    return;
+  }
   const [file] = event.target.files;
   if (!file) {
     return;
@@ -311,6 +319,10 @@ async function renderPdf(pdf) {
 }
 
 async function renderSvgVectorLayer(page, viewport, pageElement) {
+  if (!pdfjsLib?.SVGGraphics) {
+    console.warn('PDF.js SVGGraphics API is unavailable.');
+    return;
+  }
   try {
     const opList = await page.getOperatorList();
     const svgGfx = new pdfjsLib.SVGGraphics(page.commonObjs, page.objs);
