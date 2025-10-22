@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>pdfassembler GUI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>pdfassembler visual editor</h1>
+      <div class="controls">
+        <label class="file-upload">
+          <input id="fileInput" type="file" accept="application/pdf" />
+          <span>Load PDF</span>
+        </label>
+        <button id="saveButton" type="button" disabled>Save layout</button>
+        <button id="downloadButton" type="button" disabled>Download PDF</button>
+        <button id="summaryButton" type="button" disabled>Document summary</button>
+        <span id="status" role="status">No document loaded</span>
+      </div>
+    </header>
+    <main class="workspace">
+      <section class="page-viewer" aria-label="Page preview">
+        <div id="pages"></div>
+      </section>
+      <aside class="inspector" aria-label="Element inspector">
+        <h2>Element details</h2>
+        <div id="inspectorContent" class="inspector-body">
+          <p>Select an element to edit its properties.</p>
+        </div>
+        <div class="inspector-actions">
+          <button id="bringForward" type="button" disabled>Bring forward</button>
+          <button id="sendBackward" type="button" disabled>Send backward</button>
+        </div>
+      </aside>
+    </main>
+    <template id="inspectorTemplate">
+      <form id="inspectorForm">
+        <label>Type <input name="type" type="text" readonly /></label>
+        <label>Text <textarea name="text" rows="3"></textarea></label>
+        <label>X position <input name="x" type="number" step="0.5" /></label>
+        <label>Y position <input name="y" type="number" step="0.5" /></label>
+        <label>Width <input name="width" type="number" step="0.5" /></label>
+        <label>Height <input name="height" type="number" step="0.5" /></label>
+        <label>Font size <input name="fontSize" type="number" step="0.5" /></label>
+      </form>
+    </template>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
