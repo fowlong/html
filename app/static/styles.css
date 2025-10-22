@@ -1,0 +1,252 @@
+:root {
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1a1a1a;
+  background: #f4f6fb;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: linear-gradient(90deg, #2f80ed, #56ccf2);
+  color: #fff;
+  padding: 1rem 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.controls button,
+.controls .file-upload span {
+  background: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  color: #2f80ed;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.controls button:disabled,
+.controls .file-upload input:disabled + span {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.controls button:not(:disabled):hover,
+.controls .file-upload span:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.file-upload {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#status {
+  font-size: 0.9rem;
+  color: #fefefe;
+}
+
+.workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.page-viewer {
+  flex: 1;
+  overflow: auto;
+  padding: 2rem;
+}
+
+#pages {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  justify-items: center;
+}
+
+.page-wrapper {
+  position: relative;
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 32px rgba(31, 50, 81, 0.12);
+  border: 1px solid rgba(47, 128, 237, 0.25);
+  background-image: linear-gradient(45deg, rgba(47, 128, 237, 0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(47, 128, 237, 0.05) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(47, 128, 237, 0.05) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(47, 128, 237, 0.05) 75%);
+  background-size: 20px 20px;
+}
+
+.page-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0.75rem;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.page-wrapper .element {
+  position: absolute;
+  border: 2px solid transparent;
+  border-radius: 0.35rem;
+  box-sizing: border-box;
+  cursor: grab;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.85);
+  transition: border-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+.page-wrapper .element:active {
+  cursor: grabbing;
+}
+
+.page-wrapper .element.selected {
+  border-color: #f2994a;
+  box-shadow: 0 8px 18px rgba(242, 153, 74, 0.25);
+}
+
+.page-wrapper .element-text .text-editor {
+  min-width: 32px;
+  min-height: 24px;
+  outline: none;
+  font-size: inherit;
+  font-family: inherit;
+  color: #1a1a1a;
+  background: transparent;
+  white-space: pre-wrap;
+}
+
+.page-wrapper .element-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.25rem;
+}
+
+.inspector {
+  width: 320px;
+  background: #ffffff;
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: -6px 0 18px rgba(15, 23, 42, 0.08);
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inspector h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #2f80ed;
+}
+
+.inspector-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.summary-list {
+  padding-left: 1.2rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.inspector-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-weight: 600;
+  color: #4a4a68;
+}
+
+.inspector-body input,
+.inspector-body textarea {
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  font: inherit;
+  transition: border 0.1s ease, box-shadow 0.1s ease;
+}
+
+.inspector-body input:focus,
+.inspector-body textarea:focus {
+  outline: none;
+  border-color: #2f80ed;
+  box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.15);
+}
+
+.inspector-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.inspector-actions button {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f2994a, #f2c94c);
+}
+
+.inspector-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #d0d4e4;
+}
+
+@media (max-width: 1024px) {
+  .workspace {
+    flex-direction: column;
+  }
+
+  .inspector {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.08);
+  }
+}
